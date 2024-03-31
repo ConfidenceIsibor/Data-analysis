@@ -1,0 +1,100 @@
+CREATE database WALMARTSALES;
+create table SALES3(
+invoice_id varchar(30) not null primary key,
+branch varchar(5) not null,
+city varchar(30) not null,
+customer_type varchar(30) not null,
+gender varchar(10) not null,
+product_line varchar(100) not null,
+unit_price decimal(10, 2) not null,
+quantity int not null,
+vat float(6, 4) not null,
+total decimal(10, 4) not null,
+date datetime not null,
+time time not null,
+payment_method varchar(15) not null,
+cogs decimal(10, 2) not null,
+gross_margin_pct float(11, 9),
+gross_income decimal(12, 4),
+rating float(2, 1));
+
+-- feature engineering - add columns --
+select 
+	time,
+	(case
+		when 'time' between "00:00:00" and "12:00:00" then "Morning"
+		when 'time' between "12:01:00" and "16:00:00" then "Afternoon"
+		else "Evening"
+	END) as time_of_day
+from SALES3;    
+
+-- ADD THE COLUMN -- 
+ALTER TABLE SALES3 ADD COLUMN time_of_day varchar(20);
+select * from sales3;
+
+update sales3
+set time_of_day = (
+	case
+		when 'time' between "00:00:00" and "12:00:00" then "Morning"
+		when 'time' between "12:01:00" and "16:00:00" then "Afternoon"
+		else "Evening"
+	END
+);
+-- add column day name --
+
+select date, dayname(date) as day_name from sales3; 
+alter table sales3 add column day_name varchar(10);
+update sales3
+set day_name = dayname(date);
+
+-- add monthname
+select date, monthname(date) as month_name from sales3;
+alter table sales3 add column month_name varchar(20);
+update sales3
+set month_name = monthname(date);
+
+----- Geneic questions --- EDA ---
+-- ---- How many unique cities does the data have?
+select distinct city from sales3;
+-- --- How many unique branches do we have?
+select distinct branch from sales3;
+select distinct city, branch from sales3;
+
+-- Answer product questions- --
+-- how many unique product lines does the data have?
+select count(distinct product_line) from sales3;
+
+-- most common payment method? -- 
+select payment_method, count(payment_method) as count from sales3 group by payment_method order by count DESC; 
+-- most selling product line?- -
+select product_line, count(product_line) as count from sales3 group by product_line order by count DESC;
+
+-- what is the total revenue by month? ---
+select month_name as month, sum(total) as total_revenue from sales3 group by month_name order by total_revenue desc;
+-- what month has the largest cogs? --
+select month_name as month, sum(cogs) as cogs from sales3  group by month_name order by cogs desc;
+
+-- which product line has the largest revenue? --
+select product_line, sum(total) as total_revenue from sales3 group by product_line order by total_revenue desc;
+
+-- the city with the largest revenue? --
+select city, sum(total) as total_revenue from sales3 group by city order by total_revenue desc;
+
+--  product line with the largest VAT? --
+select product_line, avg(vat) as avg_vat from sales3 group by product_line order by avg_vat desc;
+
+-- fetch each product line and add a column showing good or bad; if its greater than average sales --
+-- select product_line from sales3;
+-- alter table sales3 add column product_rating varchar(10);
+-- update sales3
+-- set product_rating = (case
+-- when product_line, sum(total) as total_revenue is >  
+
+-- which branch sold more products than average products sold? --
+select branch, sum(quantity) as quantity from sales3 group by branch having sum(quantity) > (select avg(quantity) from sales3);
+
+-- most common product line by gender?
+select gender, product_line, count(gender) as total_count from sales3 group by gender, product_line order by total_count desc;
+
+-- average rating of each product line?
+select round(avg(rating),2) as avg_rating, product_line from sales3 group by product_line order by avg_rating;
